@@ -1,14 +1,15 @@
 {
   "name": "advisor-pi",
-  "version": "1.2.0",
-  "description": "Advisor-style strategic model guidance for Pi Coding Agent workflows",
+  "version": "1.2.0-cachefix.1",
+  "description": "Advisor-style strategic model guidance for Pi Coding Agent workflows (fork of advisor-pi with a prompt-cache fix)",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "src",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
     ".": {
@@ -39,12 +40,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/luongnv89/pi-extensions.git"
+    "url": "git+https://github.com/akmalayari/advisor-pi.git"
   },
   "bugs": {
-    "url": "https://github.com/luongnv89/pi-extensions/issues"
+    "url": "https://github.com/akmalayari/advisor-pi/issues"
   },
-  "homepage": "https://github.com/luongnv89/pi-extensions/tree/main/extensions/advisor-pi",
+  "homepage": "https://github.com/akmalayari/advisor-pi#readme",
   "peerDependencies": {
     "@earendil-works/pi-agent-core": "^0.75.4",
     "@earendil-works/pi-ai": "^0.75.4",

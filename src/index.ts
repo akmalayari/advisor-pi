@@ -267,7 +267,11 @@ export default function advisorPiExtension(pi: ExtensionAPI) {
 	pi.on("before_agent_start", async (event) => {
 		if (!config.enabled) return;
 		return {
-			systemPrompt: `${event.systemPrompt}\n\n${buildExecutorGuidance(config, useCount)}`,
+			// The guidance must not depend on useCount: it is part of the executor's
+			// system prompt, and any change there invalidates the provider's prompt
+			// cache for the whole conversation. The live count is reported in each
+			// advisor tool result instead, which is appended after cached content.
+			systemPrompt: `${event.systemPrompt}\n\n${buildExecutorGuidance(config)}`,
 		};
 	});
 
@@ -698,11 +702,10 @@ export function defaultConfig(): AdvisorConfig {
 	};
 }
 
-function buildExecutorGuidance(config: AdvisorConfig, useCount: number): string {
-	const remaining = Math.max(0, config.maxUses - useCount);
+export function buildExecutorGuidance(config: AdvisorConfig): string {
 	return [
 		"Advisor-pi is enabled.",
-		`The advisor tool consults ${config.provider}/${config.modelId} with ${config.thinkingLevel} thinking for strategic guidance and has ${remaining}/${config.maxUses} uses remaining on this branch.`,
+		`The advisor tool consults ${config.provider}/${config.modelId} with ${config.thinkingLevel} thinking for strategic guidance. It allows at most ${config.maxUses} calls per session branch; each advisor result starts with the calls used so far (used/max), and the tool reports when the limit is reached.`,
 		"Use advisor for complex planning, risky implementation choices, repeated failures, or course correction. Do not use advisor for trivial edits or simple facts.",
 		`Advisor cache preference is ${config.cacheRetention}; caching support is provider-dependent.`,
 	].join("\n");

@@ -1,8 +1,16 @@
 # advisor-pi
 
+> **Fork notice.** This is a standalone copy of
+> [`advisor-pi` 1.2.0](https://github.com/luongnv89/pi-extensions/tree/main/extensions/advisor-pi)
+> by luongnv89, with one change: the executor's system prompt no longer embeds
+> the remaining advisor-use count. That count changed after every advisor call,
+> which invalidated the provider prompt cache for the whole conversation on the
+> next message. The live count is still reported at the top of every advisor
+> result (`used/max`). See [CHANGELOG.md](CHANGELOG.md).
+
 Advisor-style strategic guidance for Pi Coding Agent.
 
-![advisor-pi screenshot](../../assets/advisor-pi.png)
+![advisor-pi screenshot](https://raw.githubusercontent.com/luongnv89/pi-extensions/main/assets/advisor-pi.png)
 
 `advisor-pi` adds an LLM-callable `advisor` tool. During complex workflows, the
 executor model can pause and consult a configured higher-capability advisor model
@@ -98,29 +106,25 @@ session and are not written back.
 
 ## Install
 
-Published on npm: [`advisor-pi`](https://www.npmjs.com/package/advisor-pi). Register the package with **Pi** (`pi install`) — plain `npm install` does not add it to Pi's `settings.json`.
+Install this fork straight from GitHub. Register it with **Pi** (`pi install`); plain `npm install` does not add it to Pi's `settings.json`. If you have the npm version installed, remove it first so the two don't both register an `advisor` tool.
 
 ```bash
-pi install npm:advisor-pi
-pi install npm:advisor-pi@1.0.0   # pin version
-pi install -l npm:advisor-pi      # project-local (.pi/settings.json)
-pi -e npm:advisor-pi              # one session, no install
+pi remove npm:advisor-pi                                      # if installed
+pi install git:github.com/akmalayari/advisor-pi               # latest
+pi install git:github.com/akmalayari/advisor-pi@v1.2.0-cachefix.1   # pinned
+pi install -l git:github.com/akmalayari/advisor-pi            # project-local
+pi -e git:github.com/akmalayari/advisor-pi                    # one session, no install
 ```
 
 Then run `/reload` in Pi (or restart).
 
 ```bash
 pi list
-pi update npm:advisor-pi
-pi remove npm:advisor-pi
+pi update --extensions
+pi remove git:github.com/akmalayari/advisor-pi
 ```
 
-**From [pi-extensions](https://github.com/luongnv89/pi-extensions) (git):**
-
-```bash
-cp -r extensions/advisor-pi ~/.pi/agent/extensions/
-# or: curl -fsSL .../install.sh | bash -s -- --auto
-```
+Pi loads `src/index.ts` directly; no build step is needed to use it.
 
 ## Cost and latency
 
