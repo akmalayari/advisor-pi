@@ -1,0 +1,159 @@
+# advisor-pi
+
+Advisor-style strategic guidance for Pi Coding Agent.
+
+![advisor-pi screenshot](../../assets/advisor-pi.png)
+
+`advisor-pi` adds an LLM-callable `advisor` tool. During complex workflows, the
+executor model can pause and consult a configured higher-capability advisor model
+for planning, risk analysis, course correction, or review guidance.
+
+The advisor receives the current conversation transcript plus the executor's
+question. It has no tools and cannot modify files; it only returns strategic
+advice to the executor.
+
+## Behavior
+
+- Registers an `advisor` tool for complex or high-risk tasks.
+- Lets the executor decide when a consultation is useful.
+- Calls a configured advisor model through Pi's model registry and auth.
+- Tracks advisor uses per session branch and stops after the configured limit.
+- Caps the conversation transcript sent per call at a configurable character
+  limit (default 20000): longer transcripts keep the most recent context and
+  are marked as truncated, so per-call cost stays bounded as sessions grow.
+- Passes a prompt-cache preference (`none`, `short`, or `long`) where the
+  selected provider supports it.
+- Defaults to `openai-codex/gpt-5.6-sol` with `high` thinking.
+- Validates the configured model against the registry at load: when the
+  default (or a stored/flag-provided model) does not resolve, it falls back
+  to a working model with a warning notice instead of failing every call.
+  Stored legacy defaults are only migrated when the migration target resolves.
+- Shows a compact `advisor:<provider>/<model> <thinking> <remaining>` status in Pi's
+  footer when UI is available.
+- In the terminal TUI, bare `/advisor-pi` opens an interactive settings menu. It
+  edits enabled state, model, thinking, use limit, transcript cap, and cache
+  retention; it also shows the current branch use count and offers a confirmed
+  reset. Each accepted edit is validated and persisted immediately. Enter a
+  `provider/model` ID to select a model; Pi's registry validates it. The menu
+  does not list arbitrary configured model IDs, which could contain private data.
+  Use arrow keys and Enter to select, and Escape to cancel a prompt or exit the
+  menu; **Close** exits without further changes.
+
+## Commands
+
+```text
+/advisor-pi
+/advisor-pi status
+/advisor-pi enable
+/advisor-pi disable
+/advisor-pi model <provider>/<model>
+/advisor-pi thinking <minimal|low|medium|high|xhigh|max>
+/advisor-pi max-uses <number>
+/advisor-pi max-transcript-chars <number>
+/advisor-pi cache <none|short|long>
+/advisor-pi reset
+```
+
+Examples:
+
+```text
+/advisor-pi model openai-codex/gpt-5.6-sol
+/advisor-pi thinking high
+/advisor-pi max-uses 5
+/advisor-pi max-transcript-chars 20000
+/advisor-pi cache long
+```
+
+Bare `/advisor-pi` keeps the text status response in print, JSON, and other
+non-TUI modes. `/advisor-pi reset` remains available as the explicit command
+for resetting this session branch's use count.
+
+## CLI flags
+
+```bash
+pi --advisor-model openai-codex/gpt-5.6-sol \
+   --advisor-thinking high \
+   --advisor-max-uses 5 \
+   --advisor-max-transcript-chars 20000 \
+   --advisor-cache short
+```
+
+Disable on startup:
+
+```bash
+pi --advisor-enabled=false
+```
+
+## Settings persistence
+
+Deliberate `/advisor-pi` edits are stored as private, validated per-setting
+JSON files in `~/.pi/agent/advisor-pi-preferences/` (under Pi's
+`getAgentDir()`): `enabled.json`, `model.json` (provider and model ID are one
+logical setting), `thinkingLevel.json`, `maxUses.json`, `cacheRetention.json`,
+and `maxTranscriptChars.json`. The stored settings are enabled state,
+model, thinking level, max uses, cache preference, and transcript cap. Advisor
+`useCount`, branch replay state, and runtime-only request settings remain
+session-only. Explicit startup flags override the stored settings for that
+session and are not written back.
+
+## Install
+
+Published on npm: [`advisor-pi`](https://www.npmjs.com/package/advisor-pi). Register the package with **Pi** (`pi install`) — plain `npm install` does not add it to Pi's `settings.json`.
+
+```bash
+pi install npm:advisor-pi
+pi install npm:advisor-pi@1.0.0   # pin version
+pi install -l npm:advisor-pi      # project-local (.pi/settings.json)
+pi -e npm:advisor-pi              # one session, no install
+```
+
+Then run `/reload` in Pi (or restart).
+
+```bash
+pi list
+pi update npm:advisor-pi
+pi remove npm:advisor-pi
+```
+
+**From [pi-extensions](https://github.com/luongnv89/pi-extensions) (git):**
+
+```bash
+cp -r extensions/advisor-pi ~/.pi/agent/extensions/
+# or: curl -fsSL .../install.sh | bash -s -- --auto
+```
+
+## Cost and latency
+
+Each advisor consultation is a separate model call. That means:
+
+- Advisor input and output are billed separately by the selected provider.
+- Streaming from the executor pauses while the advisor call runs.
+- Longer transcripts cost more because the advisor reads the conversation
+  context. Each call sends at most `max-transcript-chars` characters
+  (default 20000), keeping the most recent context and marking truncation.
+- The `max-uses` setting is a safety budget; raise it only when deeper review is
+  worth the extra cost.
+
+## Caching
+
+`advisor-pi` passes the configured cache preference to Pi's AI provider layer:
+
+- `none` — do not request prompt caching.
+- `short` — request normal/short cache retention where supported.
+- `long` — request long cache retention where supported.
+
+Provider support varies. Some providers ignore cache preferences, some require
+specific model compatibility, and cache reads/writes may still be billed.
+
+## Known limitations
+
+- This is a portable Pi custom-tool approximation, not Anthropic's native beta
+  `advisor_20260301` server tool.
+- Native provider-specific advisor usage fields may not appear in provider usage
+  reports.
+- The advisor has no tools and cannot inspect files beyond what appears in the
+  transcript.
+- Very long conversations are truncated to the transcript cap before sending,
+  so older context may be omitted on advisor calls.
+- `max-uses` is tracked per Pi session branch from extension state and tool
+  result details; manual session editing can affect reconstruction.
